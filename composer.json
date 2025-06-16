@@ -1,0 +1,19 @@
+{
+  "name": "developerxnoxs/multi-search-engine",
+  "description": "A PHP library for performing search via Google, Bing, and DuckDuckGo with custom User-Agent, proxy, and delay support.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "developerxnoxs",
+      "email": "developerxnoxs@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "SearchEngine\\": "src/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
