@@ -11,9 +11,20 @@ composer require developerxnoxs/multi-search-engine
 ## Usage
 
 ```php
-use SearchEngine\GoogleSearch;
+require __DIR__.'/vendor/autoload.php';
 
-$search = new GoogleSearch();
-$result = $search->search('example')->data();
-print_r($result);
+use SearchEngine\GoogleSearch;
+use SearchEngine\BingSearch;
+use SearchEngine\DuckDuckGoSearch;
+
+$google = new GoogleSearch();
+$bing = new BingSearch();
+$duck = new DuckDuckGoSearch();
+
+$query = "ChatGPT";
+
+echo "Google:\n";
+print_r($google->search($query)->url());
+print_r($google->search($query)->json());
+print_r($google->search($query)->data());
 ```
