@@ -66,6 +66,26 @@ abstract class SearchEngineBase
         return array_column($this->results, 'url');
     }
 
+    public function visit(int $index = 0): ?string
+    {
+        $url = $this->results[$index]['url'] ?? null;
+        if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return "URL tidak valid: " . ($url ?? '(null)');
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => "GET",
+                'header' => "User-Agent: Mozilla/5.0\r\n"
+            ]
+        ]);
+
+        $html = @file_get_contents($url, false, $context);
+        if ($html === false) return "Gagal membuka: $url";
+
+        return trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
     public function data(): array
     {
         return $this->results;
@@ -85,5 +105,23 @@ abstract class SearchEngineBase
             rand(1, 2), rand(3, 5),
             rand(1, 3), rand(0, 4), rand(0, 9)
         );
+    }
+
+    public function filterByDomain(string $domain): self
+    {
+        $this->results = array_filter($this->results, function ($item) use ($domain) {
+            $host = parse_url($item['url'] ?? '', PHP_URL_HOST);
+            return isset($item['url']) && is_string($host) && str_contains($host, $domain);
+        });
+
+        $this->results = array_values($this->results); // Reset index
+        return $this;
+    }
+
+    public function filter(callable $callback): self
+    {
+        $this->results = array_filter($this->results, $callback);
+        $this->results = array_values($this->results);
+        return $this;
     }
 }
