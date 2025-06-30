@@ -1,7 +1,7 @@
 <?php
 namespace SearchEngine;
 
-use DOMDocument;
+use DOMDocument; 
 use DOMXPath;
 
 class BingSearch extends SearchEngineBase
