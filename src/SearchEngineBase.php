@@ -10,6 +10,9 @@ abstract class SearchEngineBase
     protected ?string $error = null;
     protected int $retryCount = 3;
     protected int $retryDelay = 1000;
+    protected ?string $scraperApiKey = null;
+    protected bool $useScraperApi = false;
+    protected bool $autoFallbackToScraperApi = true;
 
     abstract protected function buildUrl(string $query, int $start, int $numResults, string $lang, ?string $region): string;
     abstract protected function parseResults(string $html, int $numResults, int &$fetched): void;
@@ -52,9 +55,14 @@ abstract class SearchEngineBase
         
         $fetched = 0;
         $start = $startNum;
+        $useScraperApiForThisRequest = $this->useScraperApi;
 
         while ($fetched < $numResults) {
             $url = $this->buildUrl($query, $start, $numResults, $lang, $region);
+
+            if ($useScraperApiForThisRequest && $this->scraperApiKey !== null) {
+                $url = $this->buildScraperApiUrl($url);
+            }
 
             $headers = [
                 "User-Agent: {$this->getRandomUserAgent()}",
@@ -70,27 +78,37 @@ abstract class SearchEngineBase
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => $headers,
                 CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_TIMEOUT => $timeout,
+                CURLOPT_TIMEOUT => $useScraperApiForThisRequest ? max($timeout, 60) : $timeout,
                 CURLOPT_SSL_VERIFYPEER => $sslVerify,
                 CURLOPT_ENCODING => ''
             ];
 
-            if ($proxy) {
+            if ($proxy && !$useScraperApiForThisRequest) {
                 $opts[CURLOPT_PROXY] = $proxy;
             }
 
-            if (static::class === \SearchEngine\GoogleSearch::class) {
+            if (static::class === \SearchEngine\GoogleSearch::class && !$useScraperApiForThisRequest) {
                 $opts[CURLOPT_COOKIE] = "CONSENT=PENDING+987; SOCS=CAESHAgBEhIaAB";
             }
 
             $html = $this->executeWithRetry($opts);
             
             if ($html === false) {
+                if ($this->canFallbackToScraperApi() && !$useScraperApiForThisRequest) {
+                    $useScraperApiForThisRequest = true;
+                    $this->error = null;
+                    continue;
+                }
                 break;
             }
 
             $blockedMessage = $this->detectBlockedPage($html);
             if ($blockedMessage !== null) {
+                if ($this->canFallbackToScraperApi() && !$useScraperApiForThisRequest) {
+                    $useScraperApiForThisRequest = true;
+                    $this->error = null;
+                    continue;
+                }
                 $this->error = $blockedMessage;
                 break;
             }
@@ -110,6 +128,11 @@ abstract class SearchEngineBase
         }
 
         return $this;
+    }
+
+    protected function canFallbackToScraperApi(): bool
+    {
+        return $this->autoFallbackToScraperApi && $this->scraperApiKey !== null;
     }
 
     protected function executeWithRetry(array $opts): string|false
@@ -146,6 +169,37 @@ abstract class SearchEngineBase
         $this->retryCount = max(1, $count);
         $this->retryDelay = max(0, $delayMs);
         return $this;
+    }
+
+    public function setScraperApi(?string $apiKey, bool $useAlways = false): self
+    {
+        $this->scraperApiKey = $apiKey;
+        $this->useScraperApi = $useAlways;
+        return $this;
+    }
+
+    public function setAutoFallback(bool $enabled): self
+    {
+        $this->autoFallbackToScraperApi = $enabled;
+        return $this;
+    }
+
+    public function isUsingScraperApi(): bool
+    {
+        return $this->useScraperApi;
+    }
+
+    protected function buildScraperApiUrl(string $url): string
+    {
+        if ($this->scraperApiKey === null) {
+            return $url;
+        }
+        
+        return 'http://api.scraperapi.com?' . http_build_query([
+            'api_key' => $this->scraperApiKey,
+            'url' => $url,
+            'render' => 'false'
+        ]);
     }
 
     public function url(): array

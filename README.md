@@ -325,6 +325,106 @@ $results = $search->search('test', proxy: 'http://user:pass@proxy.example.com:80
 
 ---
 
+## ScraperAPI Integration
+
+Library ini mendukung [ScraperAPI](https://www.scraperapi.com/) untuk mengatasi pemblokiran dari mesin pencari. ScraperAPI adalah layanan proxy yang menangani rotasi IP, CAPTCHA, dan rate limiting secara otomatis.
+
+### Cara Mendapatkan API Key
+
+1. Daftar akun gratis di [scraperapi.com](https://www.scraperapi.com/)
+2. Salin API key dari dashboard
+3. Akun gratis mendapat 5,000 kredit per bulan
+
+### Menggunakan ScraperAPI
+
+#### Mode Auto-Fallback (Rekomendasi)
+
+Dalam mode ini, library akan menggunakan ScraperAPI **hanya ketika** request diblokir (captcha, rate limit, dll):
+
+```php
+$search = new GoogleSearch();
+
+// Set API key - ScraperAPI akan digunakan otomatis saat diblokir
+$search->setScraperApi('YOUR_SCRAPER_API_KEY');
+
+$results = $search->search('test query')->data();
+
+// Cek apakah ScraperAPI digunakan
+if ($search->isUsingScraperApi()) {
+    echo "Request menggunakan ScraperAPI";
+}
+```
+
+#### Mode Always-On
+
+Gunakan ScraperAPI untuk semua request (lebih stabil tapi menggunakan lebih banyak kredit):
+
+```php
+$search = new GoogleSearch();
+
+// Parameter kedua = true berarti selalu gunakan ScraperAPI
+$search->setScraperApi('YOUR_SCRAPER_API_KEY', useAlways: true);
+
+$results = $search->search('test query')->data();
+```
+
+#### Menonaktifkan Auto-Fallback
+
+Jika Anda ingin mengontrol sendiri kapan menggunakan ScraperAPI:
+
+```php
+$search = new GoogleSearch();
+$search->setScraperApi('YOUR_SCRAPER_API_KEY');
+
+// Nonaktifkan auto-fallback
+$search->setAutoFallback(false);
+
+// Request normal tanpa ScraperAPI
+$search->search('query 1');
+
+// Aktifkan ScraperAPI untuk request tertentu
+$search->setScraperApi('YOUR_SCRAPER_API_KEY', useAlways: true);
+$search->search('query 2');
+```
+
+### Contoh Lengkap dengan ScraperAPI
+
+```php
+<?php
+require __DIR__ . '/vendor/autoload.php';
+
+use SearchEngine\GoogleSearch;
+
+// Ambil API key dari environment variable (lebih aman)
+$apiKey = getenv('SCRAPER_API_KEY');
+
+$search = new GoogleSearch();
+$search->setScraperApi($apiKey);
+$search->setRetry(3, 2000);
+
+$search->search('PHP programming tutorial', numResults: 10);
+
+if ($search->hasError()) {
+    echo "Error: " . $search->getError() . "\n";
+} else {
+    echo "Ditemukan " . $search->count() . " hasil:\n\n";
+    
+    foreach ($search->data() as $i => $result) {
+        echo ($i + 1) . ". " . $result['title'] . "\n";
+        echo "   " . $result['url'] . "\n\n";
+    }
+}
+```
+
+### Tips Penggunaan ScraperAPI
+
+1. **Simpan API key di environment variable** - Jangan hardcode di source code
+2. **Gunakan mode auto-fallback** - Hemat kredit dengan hanya menggunakan ScraperAPI saat diperlukan
+3. **Tambahkan delay** - Meskipun menggunakan ScraperAPI, delay tetap membantu menghindari rate limit
+4. **Timeout lebih lama** - ScraperAPI memerlukan waktu lebih lama, library otomatis menggunakan timeout minimal 60 detik
+
+---
+
 ## Contoh Lengkap
 
 ### Contoh 1: Pencarian Sederhana
