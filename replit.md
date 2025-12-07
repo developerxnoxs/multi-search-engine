@@ -1,55 +1,68 @@
 # Multi Search Engine PHP Library
 
 ## Overview
-This is a PHP library for performing web searches across multiple search engines (Google, Bing, DuckDuckGo, Mojeek, Yahoo, and Brave). The library provides a simple OOP interface for scraping search results.
+Library PHP untuk melakukan pencarian web di berbagai mesin pencari (Google, Bing, DuckDuckGo, Mojeek, Yahoo, Brave). Library ini menyediakan interface OOP yang sederhana untuk scraping hasil pencarian.
 
 ## Project Structure
 - `src/` - Core library classes
-  - `SearchEngineBase.php` - Abstract base class for all search engines
-  - `GoogleSearch.php`, `BingSearch.php`, `DuckDuckGoSearch.php`, etc. - Individual search engine implementations
-- `public/` - Web demo interface
-  - `index.php` - Interactive web interface for testing the library
-- `example/` - Example usage scripts
-  - `test.php` - CLI example
+  - `SearchEngineBase.php` - Abstract base class dengan fitur: retry, error handling, filter, dll
+  - `GoogleSearch.php`, `BingSearch.php`, `DuckDuckGoSearch.php`, dll - Implementasi tiap mesin pencari
+- `example/` - Contoh penggunaan
+  - `test.php` - Contoh CLI sederhana
 - `vendor/` - Composer dependencies
-- `server.php` - Development server script (runs on port 5000)
+- `test_all_engines.php` - Script untuk menguji semua mesin pencari
 
-## Current State
-The project has been set up in the Replit environment with:
-- PHP 8.2 installed
-- Web demo interface created at `public/index.php`
-- Development server configured to run on port 5000 (0.0.0.0:5000)
-- Workflow configured to run the PHP development server
+## Search Engine Status
+| Engine | Status |
+|--------|--------|
+| DuckDuckGo | Stabil |
+| Yahoo | Stabil |
+| Mojeek | Stabil |
+| Bing | Rate Limited (butuh proxy) |
+| Google | Rate Limited (butuh proxy) |
+| Brave | Rate Limited (butuh proxy) |
 
-## Architecture
-This is a library project with a web demo frontend:
-- **Backend**: PHP library classes that scrape various search engines using cURL
-- **Frontend**: Single-page PHP interface for demonstrating the library's capabilities
-- **Dependencies**: No external PHP packages required (uses built-in PHP extensions: DOM, cURL)
+## Recent Changes
+- 2024-12-08: Library update
+  - Menghapus method `visit()` yang tidak reliable
+  - Menghapus parameter `$safe` yang tidak digunakan
+  - Menambah User-Agent modern (Chrome/Firefox)
+  - Menambah fitur: delay, getHttpCode(), hasError(), getError()
+  - Menambah fitur: count(), first(), last(), get(), toArray(), isEmpty()
+  - Menambah fitur: map(), each(), setRetry()
+  - Menambah retry mechanism dengan exponential backoff
+  - Update README.md dengan dokumentasi lengkap dalam Bahasa Indonesia
+  - Menghapus frontend (ini adalah library, bukan aplikasi web)
 
-## Usage
+## Library Features
+- **Retry mechanism** - Auto retry dengan exponential backoff
+- **Error handling** - hasError(), getError(), getHttpCode()
+- **Result manipulation** - first(), last(), get(), count(), isEmpty()
+- **Filtering** - filterByDomain(), filter() dengan callback
+- **Data transformation** - map(), each(), json(), toArray()
+- **Proxy support** - Parameter proxy untuk menghindari rate limit
 
-### Web Interface
-The web demo is available at the Replit preview URL. It provides:
-- Search form with query input
-- Search engine selector (Google, Bing, DuckDuckGo, Mojeek, Yahoo, Brave)
-- Results count selector (5, 10, or 20 results)
-- Clean, modern UI displaying search results
-
-### Library Usage (CLI)
+## Usage Example
 ```php
 require __DIR__ . '/vendor/autoload.php';
 
-use SearchEngine\GoogleSearch;
+use SearchEngine\DuckDuckGoSearch;
 
-$google = new GoogleSearch();
-$results = $google->search('your query', 10)->data();
-print_r($results);
+$search = new DuckDuckGoSearch();
+$search->setRetry(3, 1000);
+
+$search->search('PHP programming', numResults: 5);
+
+if ($search->hasError()) {
+    echo "Error: " . $search->getError();
+} else {
+    foreach ($search->data() as $result) {
+        echo $result['title'] . "\n";
+    }
+}
 ```
 
-## Recent Changes
-- 2024-12-07: Initial Replit setup
-  - Installed PHP 8.2
-  - Created web demo interface at `public/index.php`
-  - Created development server script `server.php`
-  - Configured workflow for PHP Dev Server on port 5000
+## Architecture
+- **Type**: PHP Library (no web interface)
+- **Dependencies**: Built-in PHP extensions (DOM, cURL)
+- **PHP Version**: 8.0+

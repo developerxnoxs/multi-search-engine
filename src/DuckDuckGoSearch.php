@@ -26,13 +26,23 @@ class DuckDuckGoSearch extends SearchEngineBase
 
         foreach ($nodes as $a) {
             $href = $a->getAttribute('href');
+            $url = $this->extractRealUrl($href);
+            
+            if ($this->isAdUrl($url) || $this->isAdUrl($href)) {
+                continue;
+            }
+            
             $title = trim($a->textContent);
 
             $descNode = $xpath->query('../following-sibling::div[contains(@class,"result__snippet")]', $a)->item(0);
             $description = $descNode ? trim($descNode->textContent) : '';
 
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+
             $this->results[] = [
-                'url' => $href,
+                'url' => $url,
                 'title' => $title,
                 'description' => $description
             ];
@@ -40,5 +50,39 @@ class DuckDuckGoSearch extends SearchEngineBase
             $fetched++;
             if ($fetched >= $numResults) break;
         }
+    }
+
+    protected function extractRealUrl(string $ddgRedirect): string
+    {
+        if (preg_match('/uddg=([^&]+)/', $ddgRedirect, $match)) {
+            $decoded = urldecode($match[1]);
+            if (preg_match('/^https?:\/\//', $decoded)) {
+                return $decoded;
+            }
+        }
+
+        if (str_starts_with($ddgRedirect, '//')) {
+            return 'https:' . $ddgRedirect;
+        }
+
+        return $ddgRedirect;
+    }
+
+    protected function isAdUrl(string $url): bool
+    {
+        $adPatterns = [
+            'duckduckgo.com/y.js',
+            'ad_domain=',
+            'ad_provider=',
+            'ad_type=',
+        ];
+
+        foreach ($adPatterns as $pattern) {
+            if (str_contains($url, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
