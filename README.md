@@ -39,18 +39,19 @@ require __DIR__ . '/vendor/autoload.php';
 
 ## Mesin Pencari yang Tersedia
 
-| Mesin Pencari | Class | Status | Catatan |
-|---------------|-------|--------|---------|
-| DuckDuckGo | `DuckDuckGoSearch` | Stabil | Rekomendasi utama |
-| Yahoo | `YahooSearch` | Stabil | Berfungsi baik |
-| Mojeek | `MojeekSearch` | Stabil | Berfungsi baik |
-| Bing | `BingSearch` | Rate Limited | Butuh proxy |
-| Google | `GoogleSearch` | Rate Limited | Butuh proxy |
-| Brave | `BraveSearch` | Rate Limited | Butuh proxy |
+| Mesin Pencari | Class | Tanpa Proxy | Dengan ScraperAPI | Rekomendasi |
+|---------------|-------|-------------|-------------------|-------------|
+| DuckDuckGo | `DuckDuckGoSearch` | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
+| Yahoo | `YahooSearch` | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
+| Mojeek | `MojeekSearch` | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
+| Bing | `BingSearch` | ✅ Stabil | ❌ Timeout | Langsung tanpa proxy |
+| Google | `GoogleSearch` | ❌ Blocked | ✅ OK | Wajib ScraperAPI |
+| Brave | `BraveSearch` | ❌ Captcha | ❌ Captcha | Perlu investigasi |
 
 > **Penting:** 
-> - **DuckDuckGo, Yahoo, dan Mojeek** adalah mesin pencari yang paling stabil dan direkomendasikan.
-> - **Bing, Google, dan Brave** memiliki proteksi bot yang ketat (rate limiting, captcha). Untuk menggunakan mesin pencari ini, Anda **memerlukan proxy** atau rotating IP.
+> - **DuckDuckGo, Yahoo, Mojeek, dan Bing** berfungsi dengan baik tanpa proxy.
+> - **Google** memerlukan [ScraperAPI](https://www.scraperapi.com/) untuk bypass proteksi bot.
+> - **Brave** masih memerlukan investigasi lebih lanjut untuk mengatasi captcha.
 
 ---
 
@@ -563,6 +564,14 @@ echo "Hasil disimpan ke hasil-pencarian.json\n";
 | `hasError()` | `bool` | True jika ada error |
 | `getError()` | `?string` | Pesan error atau null |
 | `getHttpCode()` | `int` | HTTP status code terakhir |
+
+### Method ScraperAPI
+
+| Method | Return | Deskripsi |
+|--------|--------|-----------|
+| `setScraperApi($key, $useAlways)` | `self` | Mengatur API key ScraperAPI |
+| `setAutoFallback($enabled)` | `self` | Aktifkan/nonaktifkan auto-fallback |
+| `isUsingScraperApi()` | `bool` | Cek apakah menggunakan ScraperAPI |
 
 ---
 

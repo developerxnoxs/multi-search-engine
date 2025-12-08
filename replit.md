@@ -5,12 +5,12 @@ Library PHP untuk melakukan pencarian web di berbagai mesin pencari (Google, Bin
 
 ## Project Structure
 - `src/` - Core library classes
-  - `SearchEngineBase.php` - Abstract base class dengan fitur: retry, error handling, filter, dll
+  - `SearchEngineBase.php` - Abstract base class dengan fitur: retry, error handling, filter, ScraperAPI
   - `GoogleSearch.php`, `BingSearch.php`, `DuckDuckGoSearch.php`, dll - Implementasi tiap mesin pencari
 - `example/` - Contoh penggunaan
   - `test.php` - Contoh CLI sederhana
+  - `test_scraperapi.php` - Contoh penggunaan ScraperAPI
 - `vendor/` - Composer dependencies
-- `test_all_engines.php` - Script untuk menguji semua mesin pencari
 
 ## Search Engine Status
 | Engine | Tanpa Proxy | Dengan ScraperAPI | Rekomendasi |
