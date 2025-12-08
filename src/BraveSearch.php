@@ -23,19 +23,35 @@ class BraveSearch extends SearchEngineBase
         @$doc->loadHTML($html);
         $xpath = new DOMXPath($doc);
 
-        $nodes = $xpath->query('//div[contains(@class,"snippet")]');
+        $nodes = $xpath->query('//div[contains(@class,"snippet") and contains(@data-type,"web")]');
 
         foreach ($nodes as $node) {
-            $a = $xpath->query('.//a[@href]', $node)->item(0);
-            $title = $xpath->query('.//a', $node)->item(0);
-            $desc = $xpath->query('.//div[contains(@class,"snippet-description")]', $node)->item(0);
+            $aNode = $xpath->query('.//a[@href][contains(@class,"svelte")]', $node)->item(0);
+            
+            $titleNode = $xpath->query('.//div[contains(@class,"title") and contains(@class,"search-snippet-title")]', $node)->item(0);
+            if (!$titleNode) {
+                $titleNode = $xpath->query('.//div[contains(@class,"title")]', $node)->item(0);
+            }
+            
+            $descNode = $xpath->query('.//div[contains(@class,"content") and contains(@class,"desktop-default-regular")]', $node)->item(0);
+            if (!$descNode) {
+                $descNode = $xpath->query('.//div[contains(@class,"generic-snippet")]', $node)->item(0);
+            }
+            if (!$descNode) {
+                $descNode = $xpath->query('.//div[contains(@class,"snippet-description")]', $node)->item(0);
+            }
 
-            if (!$a || !$title || !$desc) continue;
+            if (!$aNode instanceof \DOMElement) continue;
+            
+            $url = $aNode->getAttribute('href');
+            if (empty($url) || str_starts_with($url, '#') || str_contains($url, 'brave.com')) {
+                continue;
+            }
 
             $this->results[] = [
-                'url' => $a->getAttribute('href'),
-                'title' => trim($title->textContent),
-                'description' => trim($desc->textContent),
+                'url' => $url,
+                'title' => $titleNode ? trim($titleNode->textContent) : '',
+                'description' => $descNode ? trim($descNode->textContent) : '',
             ];
 
             $fetched++;

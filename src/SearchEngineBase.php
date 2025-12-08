@@ -20,7 +20,11 @@ abstract class SearchEngineBase
     protected function detectBlockedPage(string $html): ?string
     {
         $patterns = [
-            '/captcha/i' => 'Captcha detected - please use a proxy',
+            '/<[^>]*captcha[^>]*>/i' => 'Captcha detected - please use a proxy',
+            '/id=["\']captcha/i' => 'Captcha detected - please use a proxy',
+            '/class=["\'][^"\']*captcha[^"\']*["\']/i' => 'Captcha detected - please use a proxy',
+            '/solve.*captcha/i' => 'Captcha detected - please use a proxy',
+            '/complete.*captcha/i' => 'Captcha detected - please use a proxy',
             '/unusual\s+traffic/i' => 'Unusual traffic detected - please use a proxy',
             '/automated\s+queries/i' => 'Automated queries blocked - please use a proxy',
             '/are\s+you\s+a?\s*robot/i' => 'Bot detection triggered - please use a proxy',
