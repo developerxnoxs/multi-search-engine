@@ -46,12 +46,11 @@ require __DIR__ . '/vendor/autoload.php';
 | Mojeek | `MojeekSearch` | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
 | Bing | `BingSearch` | ✅ Stabil | ❌ Timeout | Langsung tanpa proxy |
 | Google | `GoogleSearch` | ❌ Blocked | ✅ OK | Wajib ScraperAPI |
-| Brave | `BraveSearch` | ❌ Captcha | ❌ Captcha | Perlu investigasi |
+| Brave | `BraveSearch` | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
 
 > **Penting:** 
-> - **DuckDuckGo, Yahoo, Mojeek, dan Bing** berfungsi dengan baik tanpa proxy.
+> - **DuckDuckGo, Yahoo, Mojeek, Bing, dan Brave** berfungsi dengan baik tanpa proxy.
 > - **Google** memerlukan [ScraperAPI](https://www.scraperapi.com/) untuk bypass proteksi bot.
-> - **Brave** masih memerlukan investigasi lebih lanjut untuk mengatasi captcha.
 
 ---
 
