@@ -12,6 +12,9 @@ Library PHP untuk melakukan pencarian di berbagai mesin pencari (Google, Bing, D
 - [Filter Hasil](#filter-hasil)
 - [Penanganan Error](#penanganan-error)
 - [Penggunaan Proxy](#penggunaan-proxy)
+- [ScraperAPI Integration](#scraperapi-integration)
+- [Caching](#caching)
+- [Rate Limiting](#rate-limiting)
 - [Contoh Lengkap](#contoh-lengkap)
 - [API Reference](#api-reference)
 
@@ -425,6 +428,91 @@ if ($search->hasError()) {
 
 ---
 
+## Caching
+
+Library mendukung caching untuk menghindari request berulang dengan query yang sama.
+
+### Menggunakan FileCache
+
+```php
+<?php
+require __DIR__ . '/vendor/autoload.php';
+
+use SearchEngine\BingSearch;
+use SearchEngine\FileCache;
+
+// Buat cache dengan TTL 1 jam
+$cache = new FileCache('/tmp/search_cache', 3600);
+
+$search = new BingSearch();
+$search->setCache($cache);
+
+// Request pertama - dari internet
+$search->search('PHP tutorial');
+echo $search->isCacheHit() ? "Dari cache" : "Dari internet"; // Dari internet
+
+// Request kedua - dari cache (sangat cepat!)
+$search->search('PHP tutorial');
+echo $search->isCacheHit() ? "Dari cache" : "Dari internet"; // Dari cache
+```
+
+### Kontrol Cache
+
+```php
+// Nonaktifkan cache sementara
+$search->disableCache();
+$search->search('query baru'); // Selalu request baru
+
+// Aktifkan kembali
+$search->enableCache();
+
+// Hapus semua cache
+$search->clearCache();
+```
+
+---
+
+## Rate Limiting
+
+Lindungi dari rate limit dengan membatasi jumlah request per waktu.
+
+### Menggunakan Rate Limiter
+
+```php
+<?php
+require __DIR__ . '/vendor/autoload.php';
+
+use SearchEngine\GoogleSearch;
+
+$search = new GoogleSearch();
+
+// Batasi 10 request per 60 detik dengan auto-backoff
+$search->setRateLimit(maxRequests: 10, perSeconds: 60, autoBackoff: true);
+
+// Library akan otomatis menunggu jika limit tercapai
+for ($i = 0; $i < 20; $i++) {
+    $search->search("query $i");
+    echo "Request $i selesai\n";
+}
+```
+
+### Cek Status Rate Limit
+
+```php
+$status = $search->getRateLimitStatus();
+
+echo "Request dibuat: " . $status['requests_made'] . "\n";
+echo "Request tersisa: " . $status['requests_remaining'] . "\n";
+echo "Reset dalam: " . $status['reset_in'] . " detik\n";
+echo "Backoff aktif: " . ($status['backoff_active'] ? 'Ya' : 'Tidak') . "\n";
+```
+
+### Auto-Backoff
+
+Jika request gagal (rate limit, error), library akan otomatis menambah delay secara eksponensial sebelum retry berikutnya.
+
+---
+
 ## Contoh Lengkap
 
 ### Contoh 1: Pencarian Sederhana
@@ -571,6 +659,26 @@ echo "Hasil disimpan ke hasil-pencarian.json\n";
 | `setScraperApi($key, $useAlways)` | `self` | Mengatur API key ScraperAPI |
 | `setAutoFallback($enabled)` | `self` | Aktifkan/nonaktifkan auto-fallback |
 | `isUsingScraperApi()` | `bool` | Cek apakah menggunakan ScraperAPI |
+
+### Method Caching
+
+| Method | Return | Deskripsi |
+|--------|--------|-----------|
+| `setCache($cache, $ttl)` | `self` | Mengatur cache dengan TTL (default 3600 detik) |
+| `enableCache($enabled)` | `self` | Aktifkan/nonaktifkan cache |
+| `disableCache()` | `self` | Nonaktifkan cache |
+| `isCacheHit()` | `bool` | True jika hasil dari cache |
+| `clearCache()` | `bool` | Hapus semua cache |
+
+### Method Rate Limiting
+
+| Method | Return | Deskripsi |
+|--------|--------|-----------|
+| `setRateLimit($max, $perSeconds, $autoBackoff)` | `self` | Atur rate limit (default 10 req/60 detik) |
+| `setRateLimiter($rateLimiter)` | `self` | Gunakan RateLimiter custom |
+| `enableRateLimit($enabled)` | `self` | Aktifkan/nonaktifkan rate limit |
+| `disableRateLimit()` | `self` | Nonaktifkan rate limit |
+| `getRateLimitStatus()` | `array` | Status rate limit saat ini |
 
 ---
 

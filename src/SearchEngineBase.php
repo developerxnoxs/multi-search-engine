@@ -13,6 +13,12 @@ abstract class SearchEngineBase
     protected ?string $scraperApiKey = null;
     protected bool $useScraperApi = false;
     protected bool $autoFallbackToScraperApi = true;
+    protected ?CacheInterface $cache = null;
+    protected int $cacheTtl = 3600;
+    protected bool $cacheEnabled = true;
+    protected bool $cacheHit = false;
+    protected ?RateLimiter $rateLimiter = null;
+    protected bool $rateLimitEnabled = true;
 
     abstract protected function buildUrl(string $query, int $start, int $numResults, string $lang, ?string $region): string;
     abstract protected function parseResults(string $html, int $numResults, int &$fetched): void;
@@ -56,6 +62,30 @@ abstract class SearchEngineBase
         $this->results = [];
         $this->error = null;
         $this->httpCode = 0;
+        $this->cacheHit = false;
+
+        if ($this->cacheEnabled && $this->cache !== null) {
+            $cacheKey = FileCache::generateKey(static::class, $query, [
+                'numResults' => $numResults,
+                'lang' => $lang,
+                'region' => $region,
+                'startNum' => $startNum
+            ]);
+            
+            $cachedResults = $this->cache->get($cacheKey);
+            if ($cachedResults !== null) {
+                $this->results = $cachedResults;
+                $this->cacheHit = true;
+                return $this;
+            }
+        }
+
+        $engineId = $this->getEngineIdentifier();
+        if ($this->rateLimitEnabled && $this->rateLimiter !== null) {
+            if (!$this->rateLimiter->canProceed($engineId)) {
+                $waitTime = $this->rateLimiter->waitIfNeeded($engineId);
+            }
+        }
         
         $fetched = 0;
         $start = $startNum;
@@ -129,6 +159,24 @@ abstract class SearchEngineBase
             if ($delay > 0 && $fetched < $numResults) {
                 usleep($delay * 1000);
             }
+        }
+
+        if ($this->rateLimitEnabled && $this->rateLimiter !== null) {
+            if ($this->hasError()) {
+                $this->rateLimiter->recordFailure($engineId);
+            } else {
+                $this->rateLimiter->recordRequest($engineId);
+            }
+        }
+
+        if ($this->cacheEnabled && $this->cache !== null && !empty($this->results) && !$this->hasError()) {
+            $cacheKey = FileCache::generateKey(static::class, $query, [
+                'numResults' => $numResults,
+                'lang' => $lang,
+                'region' => $region,
+                'startNum' => $startNum
+            ]);
+            $this->cache->set($cacheKey, $this->results, $this->cacheTtl);
         }
 
         return $this;
@@ -314,5 +362,84 @@ abstract class SearchEngineBase
             $callback($result, $index);
         }
         return $this;
+    }
+
+    public function setCache(CacheInterface $cache, int $ttl = 3600): self
+    {
+        $this->cache = $cache;
+        $this->cacheTtl = $ttl;
+        return $this;
+    }
+
+    public function enableCache(bool $enabled = true): self
+    {
+        $this->cacheEnabled = $enabled;
+        return $this;
+    }
+
+    public function disableCache(): self
+    {
+        $this->cacheEnabled = false;
+        return $this;
+    }
+
+    public function isCacheHit(): bool
+    {
+        return $this->cacheHit;
+    }
+
+    public function clearCache(): bool
+    {
+        if ($this->cache === null) {
+            return false;
+        }
+        return $this->cache->clear();
+    }
+
+    public function setRateLimiter(RateLimiter $rateLimiter): self
+    {
+        $this->rateLimiter = $rateLimiter;
+        return $this;
+    }
+
+    public function setRateLimit(int $maxRequests, int $perSeconds = 60, bool $autoBackoff = true): self
+    {
+        $this->rateLimiter = new RateLimiter($maxRequests, $perSeconds, '/tmp/rate_limiter_' . $this->getEngineIdentifier() . '.json', $autoBackoff);
+        return $this;
+    }
+
+    public function enableRateLimit(bool $enabled = true): self
+    {
+        $this->rateLimitEnabled = $enabled;
+        return $this;
+    }
+
+    public function disableRateLimit(): self
+    {
+        $this->rateLimitEnabled = false;
+        return $this;
+    }
+
+    public function getRateLimitStatus(): array
+    {
+        if ($this->rateLimiter === null) {
+            return [
+                'enabled' => false,
+                'requests_made' => 0,
+                'requests_remaining' => 0,
+                'reset_in' => 0
+            ];
+        }
+
+        $status = $this->rateLimiter->getStatus($this->getEngineIdentifier());
+        $status['enabled'] = $this->rateLimitEnabled;
+        return $status;
+    }
+
+    protected function getEngineIdentifier(): string
+    {
+        $className = static::class;
+        $parts = explode('\\', $className);
+        return strtolower(end($parts));
     }
 }
