@@ -1,4 +1,4 @@
-modules = ["php-8.2"]
+modules = ["php-8.2", "php-8.3"]
 [agent]
 expertMode = true
 
@@ -36,3 +36,8 @@ externalPort = 80
 [deployment]
 deploymentTarget = "autoscale"
 run = ["php", "-S", "0.0.0.0:5000", "-t", "public"]
+
+[userenv]
+
+[userenv.shared]
+SCRAPER_API_KEY = "1820c54a47ebf6d3557d9be57aa70c81"
