@@ -13,14 +13,14 @@ Library PHP untuk melakukan pencarian web di berbagai mesin pencari (Google, Bin
 - `test_all_engines.php` - Script untuk menguji semua mesin pencari
 
 ## Search Engine Status
-| Engine | Status |
-|--------|--------|
-| DuckDuckGo | Stabil |
-| Yahoo | Stabil |
-| Mojeek | Stabil |
-| Bing | Rate Limited (butuh proxy) |
-| Google | Rate Limited (butuh proxy) |
-| Brave | Rate Limited (butuh proxy) |
+| Engine | Tanpa Proxy | Dengan ScraperAPI | Rekomendasi |
+|--------|-------------|-------------------|-------------|
+| DuckDuckGo | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
+| Yahoo | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
+| Mojeek | ✅ Stabil | ✅ Stabil | Langsung tanpa proxy |
+| Bing | ✅ Stabil | ❌ Timeout | Langsung tanpa proxy |
+| Google | ❌ Blocked | ✅ OK | Wajib ScraperAPI |
+| Brave | ❌ Captcha | ❌ Captcha | Perlu investigasi |
 
 ## Recent Changes
 - 2024-12-08: Library update
